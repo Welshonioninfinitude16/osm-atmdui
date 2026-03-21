@@ -1,53 +1,57 @@
 -- Qbox Client Bridge Adapter
--- Qbox is QBCore-based but uses ox_inventory and ox_lib
+-- Qbox exposes direct exports and keeps player state in qbx_core.
 
 if Bridge.Framework ~= 'qbox' then return end
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local qbx = exports.qbx_core
 
--- Get player data
+---Returns normalized player data for the ATM UI.
 function Bridge.GetPlayerData()
-    local PlayerData = QBX.Functions.GetPlayerData()
-    if not PlayerData then return nil end
-    
+    local playerData = qbx:GetPlayerData()
+    if not playerData then return nil end
+
+    local charinfo = playerData.charinfo or {}
+    local money = playerData.money or {}
+    local firstName = charinfo.firstname or ''
+    local lastName = charinfo.lastname or ''
+    local fullName = (firstName .. ' ' .. lastName):gsub('^%s*(.-)%s*$', '%1')
+
     return {
-        identifier = PlayerData.citizenid,
-        name = PlayerData.charinfo.firstname .. ' ' .. PlayerData.charinfo.lastname,
-        cash = PlayerData.money.cash or 0,
-        bank = PlayerData.money.bank or 0,
-        job = PlayerData.job,
-        gang = PlayerData.gang,
+        identifier = playerData.citizenid,
+        name = fullName ~= '' and fullName or 'Unknown',
+        cash = money.cash or 0,
+        bank = money.bank or 0,
+        job = playerData.job,
+        gang = playerData.gang,
     }
 end
 
--- Show notification (uses ox_lib)
+---Shows a Qbox notification.
 function Bridge.Notify(message, type)
-    lib.notify({
-        title = 'ATM',
-        description = message,
-        type = type or 'info',
-    })
+    qbx:Notify(message, type or 'inform')
 end
 
--- Check if player has item (ox_inventory)
+---Checks the local player's inventory for an item.
 function Bridge.HasItem(itemName)
     local count = exports.ox_inventory:Search('count', itemName)
-    return count and count > 0
+    return count and count > 0 or false
 end
 
--- Get item data (for bank card PIN)
+---Returns metadata from the first matching inventory slot.
 function Bridge.GetItemData(itemName)
     local items = exports.ox_inventory:Search('slots', itemName)
     if items and #items > 0 then
-        return items[1].metadata
+        return items[1].metadata or items[1].info
     end
+
     return nil
 end
 
--- Trigger server callback (uses ox_lib)
+---Triggers an ox_lib server callback.
 function Bridge.TriggerCallback(name, cb, ...)
     local result = lib.callback.await(name, false, ...)
     if cb then cb(result) end
+
     return result
 end
 

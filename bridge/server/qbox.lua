@@ -1,107 +1,101 @@
 -- Qbox Server Bridge Adapter
--- Qbox is QBCore-based but uses ox_inventory and ox_lib
+-- Qbox exposes an export-based API and does not use GetCoreObject().
 
 if Bridge.Framework ~= 'qbox' then return end
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local qbx = exports.qbx_core
 
--- Get player object
+---Returns the Qbox player instance for a source.
 function Bridge.GetPlayer(source)
-    return QBX.Functions.GetPlayer(source)
+    return qbx:GetPlayer(source)
 end
 
--- Get player money
+---Returns the player's cash or bank balance.
 function Bridge.GetPlayerMoney(source, account)
-    local Player = QBX.Functions.GetPlayer(source)
-    if not Player then return 0 end
-    
-    if account == 'cash' then
-        return Player.PlayerData.money.cash or 0
-    elseif account == 'bank' then
-        return Player.PlayerData.money.bank or 0
-    end
-    return 0
+    local player = Bridge.GetPlayer(source)
+    if not player or not player.PlayerData or not player.PlayerData.money then return 0 end
+
+    return player.PlayerData.money[account] or 0
 end
 
--- Add money to player
+---Adds money through the Qbox player object.
 function Bridge.AddMoney(source, account, amount, reason)
-    local Player = QBX.Functions.GetPlayer(source)
-    if not Player then return false end
-    
-    return Player.Functions.AddMoney(account, amount, reason or 'atm-transaction')
+    local player = Bridge.GetPlayer(source)
+    if not player then return false end
+
+    return player.Functions.AddMoney(account, amount, reason or 'atm-transaction')
 end
 
--- Remove money from player
+---Removes money through the Qbox player object.
 function Bridge.RemoveMoney(source, account, amount, reason)
-    local Player = QBX.Functions.GetPlayer(source)
-    if not Player then return false end
-    
-    return Player.Functions.RemoveMoney(account, amount, reason or 'atm-transaction')
+    local player = Bridge.GetPlayer(source)
+    if not player then return false end
+
+    return player.Functions.RemoveMoney(account, amount, reason or 'atm-transaction')
 end
 
--- Get player identifier (citizenid)
+---Returns the player's citizen id.
 function Bridge.GetPlayerIdentifier(source)
-    local Player = QBX.Functions.GetPlayer(source)
-    if not Player then return nil end
-    return Player.PlayerData.citizenid
+    local player = Bridge.GetPlayer(source)
+    if not player or not player.PlayerData then return nil end
+
+    return player.PlayerData.citizenid
 end
 
--- Get player name
+---Returns a readable character name.
 function Bridge.GetPlayerName(source)
-    local Player = QBX.Functions.GetPlayer(source)
-    if not Player then return 'Unknown' end
-    local charinfo = Player.PlayerData.charinfo
-    return charinfo.firstname .. ' ' .. charinfo.lastname
+    local player = Bridge.GetPlayer(source)
+    if not player or not player.PlayerData then return 'Unknown' end
+
+    local charinfo = player.PlayerData.charinfo or {}
+    local firstName = charinfo.firstname or ''
+    local lastName = charinfo.lastname or ''
+    local fullName = (firstName .. ' ' .. lastName):gsub('^%s*(.-)%s*$', '%1')
+
+    return fullName ~= '' and fullName or 'Unknown'
 end
 
--- Send notification (uses ox_lib)
+---Sends a Qbox notification to a target player.
 function Bridge.Notify(source, message, type)
-    TriggerClientEvent('ox_lib:notify', source, {
-        title = 'ATM',
-        description = message,
-        type = type or 'info',
-    })
+    qbx:Notify(source, message, type or 'inform')
 end
 
--- Check if player has item (ox_inventory)
+---Checks whether a player has at least one item.
 function Bridge.HasItem(source, itemName)
     local count = exports.ox_inventory:Search(source, 'count', itemName)
-    return count and count > 0
+    return count and count > 0 or false
 end
 
--- Get item data (for bank card PIN)
+---Returns metadata from the first matching inventory slot.
 function Bridge.GetItemData(source, itemName)
     local items = exports.ox_inventory:Search(source, 'slots', itemName)
     if items and #items > 0 then
-        return items[1].metadata
+        return items[1].metadata or items[1].info
     end
+
     return nil
 end
 
--- Get player by identifier
+---Looks up an online player by citizen id.
 function Bridge.GetPlayerByIdentifier(identifier)
-    return QBX.Functions.GetPlayerByCitizenId(identifier)
+    return qbx:GetPlayerByCitizenId(identifier)
 end
 
--- Add Item
+---Adds an item with ox_inventory metadata.
 function Bridge.AddItem(source, item, amount, info)
     return exports.ox_inventory:AddItem(source, item, amount, info)
 end
 
 if GetResourceState('ox_inventory') == 'started' then
-    exports('use_atm_receipt', function(event, item, inventory, slot, data)
+    exports('use_atm_receipt', function(event, item, inventory)
         if event == 'usingItem' then
-            if item.metadata then
-                TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata)
-            else
-                TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.info)
-            end
+            TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata or item.info)
             return false -- don't consume
         end
     end)
 end
 
--- Create callback helper (uses ox_lib)
+---Registers a server callback using ox_lib.
 function Bridge.CreateCallback(name, cb)
     lib.callback.register(name, cb)
 end
