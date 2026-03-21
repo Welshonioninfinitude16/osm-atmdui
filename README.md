@@ -1,15 +1,21 @@
-# ATM DUI - Ultra Realistic ATM System
+# OsmFX Mods ATM DUI - Ultra Realistic ATM System
+
+[![OsmFX Mods Official Store](https://img.shields.io/badge/OsmFx%20Mods%20Official%20Store-FF8C00?style=for-the-badge&logo=shopify&logoColor=white)](https://osmfxmods.com)
+[![Discord](https://img.shields.io/discord/889011029600780348?color=5865F2&label=Join%20our%20Discord&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/R8gdEmgRtz)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/osmfx)
 
 A DUI-based ATM system for FiveM that renders a realistic banking interface directly onto in-game ATM textures. Framework agnostic with support for QBCore, ESX, and Qbox.
+
+> **Pro Tip:** Elevate your server's experience with more premium resources at [OsmFX Mods](https://osmfxmods.com). Join our [Discord](https://discord.gg/R8gdEmgRtz) for exclusive updates, and consider dropping a server boost for prioritized support!
 
 ## Quickstart Guide
 
 1. Ensure the required dependency (`ox_lib`) is running on your server.
-2. Drop the `atm-dui` folder into your server's `resources` directory.
+2. Drop the `osm-atmdui` folder into your server's `resources` directory.
 3. Open `config.lua` and adjust the framework and preferences to match your server.
 4. **(Recommended)** Add the `atm_receipt` item snippet provided below to your framework's shared items to enable interactive physical receipts.
-5. Add `ensure atm-dui` to your `server.cfg`.
-6. Start your server (or run `ensure atm-dui`). You are ready to go!
+5. Add `ensure osm-atmdui` to your `server.cfg`.
+6. Start your server (or run `ensure osm-atmdui`). You are ready to go!
 
 ## Features
 
@@ -47,7 +53,7 @@ A DUI-based ATM system for FiveM that renders a realistic banking interface dire
 
 1. Download and extract to your resources folder
 2. Ensure `ox_lib` is started before this resource
-3. Add `ensure atm-dui` to your server.cfg
+3. Add `ensure osm-atmdui` to your server.cfg
 4. Configure `config.lua` as needed
 
 ## Configuration
@@ -92,23 +98,7 @@ Config.Transactions = {
 
 ## Bank Card Item
 
-For PIN verification, players need a `bank_card` item with metadata containing the PIN:
-
-### QBCore/Qbox
-```lua
--- In qb-core/shared/items.lua
-['bank_card'] = {
-    name = 'bank_card',
-    label = 'Bank Card',
-    weight = 0,
-    type = 'item',
-    image = 'bank_card.png',
-    unique = true,
-    useable = true,
-    shouldClose = true,
-    description = 'A bank card for ATM access'
-}
-```
+For PIN verification, players need a `bank_card` item with metadata containing the PIN. This is already shipped with most frameworks like QBCore and QBOX.
 
 ### ATM Receipt Item
 
@@ -135,8 +125,8 @@ Add the `atm_receipt` item to your framework's item list to enable the in-game p
 ```lua
 info = {
     cardPin = 1234,  -- 4-digit PIN
-    cardNumber = "4532123456789012",
-    citizenid = "ABC12345"
+    cardNumber = "4532123456789012", -- optional
+    citizenid = "ABC12345" -- optional
 }
 ```
 
@@ -168,7 +158,7 @@ To edit the UI:
 2. Ensure you have Node.js installed and run `npm install`.
 3. Modify the source code inside `web/src/`.
 4. Run `npm run build` to compile the changes to the `html/` folder format readable by FiveM.
-5. Restart the resource in-game with `ensure atm-dui`.
+5. Restart the resource in-game with `ensure osm-atmdui`.
 
 ## Events
 
@@ -205,12 +195,17 @@ lib.callback.register('atm-dui:server:transfer', function(source, target, amount
 ### Client Exports
 ```lua
 -- Start ATM session programmatically
-exports['atm-dui']:StartSession(atmEntity)
+exports['osm-atmdui']:StartSession(atmEntity)
 
 -- End current session
-exports['atm-dui']:EndSession()
+exports['osm-atmdui']:EndSession()
 ```
 
 ## Credits
 
-- DUI implementation inspired by [colbss_keypad](https://github.com/colbss/colbss_keypad) and [cr-3dnui](https://github.com/cody-raves/cr-3dnui) and [benite-atm](https://github.com/FuTTiiZ/benite-atm)
+- DUI implementation inspired by [colbss_keypad](https://github.com/colbss/colbss_keypad) and [cr-3dnui](https://github.com/cody-raves/cr-3dnui) and [benite-atm](https://github.com/FuTTiiZ/benite-atm) 
+- Design references from [0BugScripts](https://www.youtube.com/watch?v=FHSppY6lfFc)
+- Idea suggested on our [discord](https://discord.gg/R8gdEmgRtz) by french_fab
+
+---
+*Built with caffeine, code, and a help from our AI overlords (Claude Opus 4.5, Opus 4.6 and Gemini 3.1 Pro). The bugs, however, are 100% human-made.*

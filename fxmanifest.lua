@@ -3,9 +3,9 @@ game 'gta5'
 lua54 'yes'
 use_experimental_fxv2_oal 'yes'
 
-name 'atm-dui'
+name 'osm-atmdui'
 description 'Ultra-realistic DUI-based ATM System'
-author 'OSMFX'
+author 'osmfxmods.com'
 version '1.0.0'
 
 dependencies {

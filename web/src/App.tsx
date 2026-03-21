@@ -99,7 +99,7 @@ export default function App() {
     
     const handleKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-         fetch(`https://${(window as any).GetParentResourceName ? (window as any).GetParentResourceName() : 'atm-dui'}/closeReceipt`, { method: 'POST' }).then(() => {
+         fetch(`https://${(window as any).GetParentResourceName ? (window as any).GetParentResourceName() : 'osm-atmdui'}/closeReceipt`, { method: 'POST' }).then(() => {
             setScreen('welcome');
          }).catch();
       }
@@ -251,7 +251,7 @@ export default function App() {
               </div>
               
               {/* Native escape button */}
-              <button onClick={() => { fetch(`https://${(window as any).GetParentResourceName ? (window as any).GetParentResourceName() : 'atm-dui'}/closeReceipt`, { method: 'POST' }).then(()=>setScreen('none')).catch() }} className="absolute -top-12 right-0 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded shadow-lg transition-colors">
+              <button onClick={() => { fetch(`https://${(window as any).GetParentResourceName ? (window as any).GetParentResourceName() : 'osm-atmdui'}/closeReceipt`, { method: 'POST' }).then(()=>setScreen('none')).catch() }} className="absolute -top-12 right-0 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded shadow-lg transition-colors">
                  Close [ESC]
               </button>
             </motion.div>
