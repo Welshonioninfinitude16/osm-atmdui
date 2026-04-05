@@ -3,6 +3,11 @@
 
 if Bridge.Framework ~= 'qbox' then return end
 
+if GetResourceState('ox_inventory') ~= 'started' then
+    error('^1[atm-dui] QBox Framework requires ox_inventory! Please install and start ox_inventory.^0')
+    return
+end
+
 local qbx = exports.qbx_core
 
 ---Returns the Qbox player instance for a source.
@@ -86,14 +91,12 @@ function Bridge.AddItem(source, item, amount, info)
     return exports.ox_inventory:AddItem(source, item, amount, info)
 end
 
-if GetResourceState('ox_inventory') == 'started' then
-    exports('use_atm_receipt', function(event, item, inventory)
-        if event == 'usingItem' then
-            TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata or item.info)
-            return false -- don't consume
-        end
-    end)
-end
+exports('use_atm_receipt', function(event, item, inventory)
+    if event == 'usingItem' then
+        TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata or item.info)
+        return false -- don't consume
+    end
+end)
 
 ---Registers a server callback using ox_lib.
 function Bridge.CreateCallback(name, cb)

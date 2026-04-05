@@ -2,6 +2,11 @@
 
 if Bridge.Framework ~= 'esx' then return end
 
+if GetResourceState('ox_inventory') ~= 'started' then
+    print('^1[atm-dui] ESX Framework requires ox_inventory!^0')
+    return
+end
+
 local ESX = exports['es_extended']:getSharedObject()
 local PlayerData = {}
 
@@ -21,9 +26,16 @@ function Bridge.GetPlayerData()
         end
     end
     
+    local fName = xPlayer.firstName or ""
+    local lName = xPlayer.lastName or ""
+    local defaultName = xPlayer.name or ""
+    
+    local finalName = fName .. ' ' .. lName
+    if finalName == ' ' or finalName == '' then finalName = defaultName end
+
     return {
         identifier = xPlayer.identifier,
-        name = xPlayer.firstName .. ' ' .. xPlayer.lastName,
+        name = finalName,
         cash = cash,
         bank = bank,
         job = xPlayer.job,
@@ -40,30 +52,17 @@ function Bridge.Notify(message, type)
     ESX.ShowNotification(message, notifyType)
 end
 
--- Check if player has item (uses ox_inventory if available)
+-- Check if player has item (uses ox_inventory)
 function Bridge.HasItem(itemName)
-    if GetResourceState('ox_inventory') == 'started' then
-        local item = exports.ox_inventory:Search('count', itemName)
-        return item and item > 0
-    else
-        -- Fallback for default ESX inventory
-        local items = ESX.GetPlayerData().inventory
-        for _, item in pairs(items or {}) do
-            if item.name == itemName and item.count > 0 then
-                return true
-            end
-        end
-        return false
-    end
+    local item = exports.ox_inventory:Search('count', itemName)
+    return item and item > 0
 end
 
 -- Get item data (for bank card PIN)
 function Bridge.GetItemData(itemName)
-    if GetResourceState('ox_inventory') == 'started' then
-        local items = exports.ox_inventory:Search('slots', itemName)
-        if items and #items > 0 then
-            return items[1].metadata
-        end
+    local items = exports.ox_inventory:Search('slots', itemName)
+    if items and #items > 0 then
+        return items[1].metadata
     end
     return nil
 end

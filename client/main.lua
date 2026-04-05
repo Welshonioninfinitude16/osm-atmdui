@@ -18,6 +18,8 @@ ATM.lockedUntil = 0
 ATM.State = {
     IDLE = 'idle',
     CARD_INSERT = 'card_insert',
+    NO_CARD = 'no_card',
+    CREATE_CARD_PIN = 'create_card_pin',
     PIN_ENTRY = 'pin_entry',
     MAIN_MENU = 'main_menu',
     WITHDRAW = 'withdraw',
@@ -311,6 +313,47 @@ function ATM.InsertCardVisual(atmEntity)
     SetModelAsNoLongerNeeded(model)
 end
 
+-- Create card visual effect (spit out of ATM)
+function ATM.CreateCardVisual(atmEntity)
+    if not atmEntity or not DoesEntityExist(atmEntity) then return end
+    
+    local model = `prop_cs_credit_card`
+    lib.requestModel(model, 2500)
+    
+    local atmHeading = GetEntityHeading(atmEntity)
+
+    local modelHash = GetEntityModel(atmEntity)
+    local configKey
+    for _, v in pairs(Config.ATMModels) do
+        if GetHashKey(v) == modelHash then configKey = v; break end
+    end
+
+    local offsets = Config.PropOffsets[configKey] and Config.PropOffsets[configKey].createCard or { x = 0.25, startY = 0.20, endY = -0.10, z = 1.2 }
+    
+    local startPos = GetOffsetFromEntityInWorldCoords(atmEntity, offsets.x, offsets.startY, offsets.z)
+    local endPos = GetOffsetFromEntityInWorldCoords(atmEntity, offsets.x, offsets.endY, offsets.z)
+    
+    local prop = CreateObject(model, startPos.x, startPos.y, startPos.z, true, true, false)
+    SetEntityHeading(prop, atmHeading)
+    SetEntityRotation(prop, 90.0, 90.0, atmHeading, 2, true)
+    SetEntityCollision(prop, false, false)
+
+    for i = 1, 40 do
+        local pct = i / 40.0
+        local curPos = vector3(
+            startPos.x + (endPos.x - startPos.x) * pct,
+            startPos.y + (endPos.y - startPos.y) * pct,
+            startPos.z + (endPos.z - startPos.z) * pct
+        )
+        SetEntityCoordsNoOffset(prop, curPos.x, curPos.y, curPos.z, false, false, false)
+        Wait(20)
+    end
+    
+    Wait(500)
+    DeleteObject(prop)
+    SetModelAsNoLongerNeeded(model)
+end
+
 -- Start ATM session
 function ATM.StartSession(atmEntity)
     if ATM.inSession then return end
@@ -318,8 +361,13 @@ function ATM.StartSession(atmEntity)
     -- Check if card is required and player has one
     if Config.PIN.requireCard then
         if not Bridge.HasItem('bank_card') then
-            Bridge.Notify(Bridge.GetLocale('insert_card'), 'error')
-            return
+            if Config.PIN.allowCardCreation then
+                ATM.StartNoCardSession(atmEntity)
+                return
+            else
+                Bridge.Notify(Bridge.GetLocale('insert_card'), 'error')
+                return
+            end
         end
     end
     
@@ -367,6 +415,35 @@ function ATM.StartSession(atmEntity)
         ATM.SetState(ATM.State.PIN_ENTRY)
         ATM_DUI.SetScreen('pin_entry', { attempts = Config.PIN.maxAttempts - ATM.pinAttempts })
     end
+end
+
+-- Start ATM session when no card is present
+function ATM.StartNoCardSession(atmEntity)
+    if ATM.inSession then return end
+    
+    ATM.inSession = true
+    ATM.currentATM = atmEntity
+    ATM.pinAttempts = 0
+    ATM.enteredPIN = ''
+    ATM.enteredAmount = ''
+    ATM.transferAccount = ''
+    
+    -- Get player data
+    local playerData = Bridge.GetPlayerData()
+    ATM.sessionData = playerData
+    
+    -- Apply DUI texture
+    local atmModel = GetEntityModel(atmEntity)
+    ATM_DUI.ApplyTexture(atmModel)
+    
+    -- Initialize DUI session
+    ATM_DUI.InitSession(playerData)
+    
+    -- Transition camera
+    ATM_Camera.TransitionTo(atmEntity)
+    
+    ATM.SetState(ATM.State.NO_CARD)
+    ATM_DUI.SetScreen('no_card', { cost = Config.PIN.cardCreationCost })
 end
 
 -- End ATM session
@@ -440,7 +517,7 @@ end
 
 -- Handle PIN entry
 function ATM.EnterPINDigit(digit)
-    if ATM.currentState ~= ATM.State.PIN_ENTRY then return end
+    if ATM.currentState ~= ATM.State.PIN_ENTRY and ATM.currentState ~= ATM.State.CREATE_CARD_PIN then return end
     if #ATM.enteredPIN >= Config.PIN.length then return end
     
     ATM.enteredPIN = ATM.enteredPIN .. tostring(digit)
@@ -779,10 +856,49 @@ RegisterNetEvent('atm-dui:client:buttonClicked', function(buttonId)
             ATM.EnterPINDigit(digit)
         elseif buttonId == 'pin_clear' then
             ATM.ClearPIN()
-        elseif buttonId == 'pin_enter' then
+        elseif buttonId == 'pin_enter' or buttonId == 'side_r3' then
             ATM.SubmitPIN()
         end
         
+    elseif ATM.currentState == ATM.State.CREATE_CARD_PIN then
+        if digit ~= nil then
+            ATM.EnterPINDigit(digit)
+        elseif buttonId == 'pin_clear' then
+            ATM.ClearPIN()
+        elseif buttonId == 'pin_enter' or buttonId == 'side_r3' then
+            if #ATM.enteredPIN == Config.PIN.length then
+                ATM.SetState(ATM.State.PROCESSING)
+                ATM_DUI.SetProcessing(true)
+                
+                local success = lib.callback.await('atm-dui:server:createCard', false, ATM.enteredPIN)
+                ATM_DUI.SetProcessing(false)
+                
+                if success then
+                    ATM.PlaySound('success')
+                    ATM_DUI.ShowNotification("Card created successfully!", "success")
+                    CreateThread(function()
+                        ATM.CreateCardVisual(ATM.currentATM)
+                    end)
+                    Wait(2000)
+                    ATM.EndSession()
+                else
+                    ATM.PlaySound('error')
+                    ATM_DUI.ShowNotification("Failed to create card", "error")
+                    ATM.enteredPIN = ''
+                    ATM.SetState(ATM.State.CREATE_CARD_PIN)
+                    ATM_DUI.SetScreen('pin_entry', { attempts = -1, title = "SET NEW PIN", error = true })
+                end
+            end
+        end
+
+    elseif ATM.currentState == ATM.State.NO_CARD then
+        if buttonId == 'side_r4' then
+            ATM.SetState(ATM.State.CREATE_CARD_PIN)
+            ATM_DUI.SetScreen('pin_entry', { attempts = -1, title = "SET NEW PIN" })
+        elseif buttonId == 'side_l4' or buttonId == 'pin_clear' then
+            ATM.EndSession()
+        end
+
     elseif ATM.currentState == ATM.State.MAIN_MENU then
         -- Numbered menu: 1=Withdraw, 2=Deposit, 3=Transfer, 4=Balance
         -- CANCEL (pin_clear) = Exit

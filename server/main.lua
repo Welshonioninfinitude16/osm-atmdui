@@ -46,6 +46,44 @@ function ATM_Server.RegisterCallbacks()
         return #tostring(enteredPIN) == Config.PIN.length
     end)
     
+    -- Create Card
+    lib.callback.register('atm-dui:server:createCard', function(source, pin)
+        local src = source
+        local cost = Config.PIN.cardCreationCost or 50
+        
+        -- Try to remove money
+        local success = false
+        local currentBank = Bridge.GetPlayerMoney(src, 'bank')
+        if currentBank >= cost then
+            success = Bridge.RemoveMoney(src, 'bank', cost, 'ATM Card Issue')
+        else
+            local currentCash = Bridge.GetPlayerMoney(src, 'cash')
+            if currentCash >= cost then
+                success = Bridge.RemoveMoney(src, 'cash', cost, 'ATM Card Issue')
+            end
+        end
+        
+        if not success then
+            return false
+        end
+        
+        local cardNumber = string.format('%04d %04d %04d %04d', math.random(1000, 9999), math.random(1000, 9999), math.random(1000, 9999), math.random(1000, 9999))
+        local identifier = Bridge.GetPlayerIdentifier(src)
+        local playerName = Bridge.GetPlayerName(src)
+        
+        local metadata = {
+            cardPin = tonumber(pin),
+            cardNumber = cardNumber,
+            citizenid = identifier,
+            name = playerName,
+            expiry = os.date('%m/%y', os.time() + (365 * 24 * 60 * 60 * 3))
+        }
+        
+        Bridge.AddItem(src, 'bank_card', 1, metadata)
+        
+        return true
+    end)
+    
     -- Withdraw money
     lib.callback.register('atm-dui:server:withdraw', function(source, amount)
         local src = source
@@ -247,16 +285,6 @@ CreateThread(function()
         -- Add receipt item
         if Bridge.AddItem then
             Bridge.AddItem(src, 'atm_receipt', 1, info)
-        else
-            -- Fallback
-            local Player = exports['qb-core']:GetCoreObject().Functions.GetPlayer(src)
-            if Player then
-                if GetResourceState('ox_inventory') == 'started' then
-                    exports.ox_inventory:AddItem(src, 'atm_receipt', 1, info)
-                else
-                    Player.Functions.AddItem('atm_receipt', 1, false, info)
-                end
-            end
         end
     end)
     
@@ -302,33 +330,7 @@ CreateThread(function()
         
     --     print('^3[atm-dui] Framework: ' .. Bridge.Framework .. '^0')
         
-    --     if Bridge.Framework == 'qbcore' then
-    --         local QBCore = exports['qb-core']:GetCoreObject()
-    --         local Player = QBCore.Functions.GetPlayer(src)
-    --         if Player then
-    --             print('^3[atm-dui] Player object found, adding bank_card item^0')
-    --             success = Player.Functions.AddItem('bank_card', 1, false, metadata)
-    --             print('^3[atm-dui] AddItem result: ' .. tostring(success) .. '^0')
-    --             if success then
-    --                 TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items['bank_card'], 'add')
-    --             end
-    --         else
-    --             print('^1[atm-dui] Player object not found!^0')
-    --         end
-    --     elseif Bridge.Framework == 'qbox' then
-    --         success = exports.ox_inventory:AddItem(src, 'bank_card', 1, metadata)
-    --     elseif Bridge.Framework == 'esx' then
-    --         if GetResourceState('ox_inventory') == 'started' then
-    --             success = exports.ox_inventory:AddItem(src, 'bank_card', 1, metadata)
-    --         else
-    --             -- Default ESX inventory doesn't support metadata well
-    --             local xPlayer = exports['es_extended']:getSharedObject().GetPlayerFromId(src)
-    --             if xPlayer then
-    --                 xPlayer.addInventoryItem('bank_card', 1)
-    --                 success = true
-    --             end
-    --         end
-    --     end
+    --     success = Bridge.AddItem(src, 'bank_card', 1, metadata)
         
     --     if success then
     --         Bridge.Notify(src, 'Bank card received! PIN: ' .. pin, 'success')

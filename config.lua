@@ -17,22 +17,26 @@ Config.PropOffsets = {
     ['prop_fleeca_atm'] = {
         dispense = { x = -0.11, startY = 0.15, endY = -0.15, z = 0.95 },
         deposit = { x = -0.10, startY = -0.15, endY = 0.15, z = 0.95 },
-        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.2 }
+        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.2 },
+        createCard = { x = 0.25, startY = 0.20, endY = -0.10, z = 1.2 }
     },
     ['prop_atm_01'] = {
         dispense = { x = -0.05, startY = -0.20, endY = -0.35, z = 0.75 },
         deposit = { x = -0.05, startY = -0.35, endY = -0.20, z = 0.95 },
-        card = { x = 0.20, startY = -0.25, endY = 0.05, z = 1.12 }
+        card = { x = 0.20, startY = -0.25, endY = 0.05, z = 1.12 },
+        createCard = { x = 0.20, startY = 0.05, endY = -0.25, z = 1.12 }
     },
     ['prop_atm_02'] = {
         dispense = { x = -0.11, startY = 0.15, endY = -0.15, z = 0.95 },
         deposit = { x = -0.10, startY = -0.15, endY = 0.15, z = 0.95 },
-        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.20 }
+        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.20 },
+        createCard = { x = 0.25, startY = 0.20, endY = -0.10, z = 1.20 }
     },
     ['prop_atm_03'] = {
         dispense = { x = -0.11, startY = 0.15, endY = -0.15, z = 0.95 },
         deposit = { x = -0.10, startY = -0.15, endY = 0.15, z = 0.95 },
-        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.2 }
+        card = { x = 0.25, startY = -0.10, endY = 0.20, z = 1.2 },
+        createCard = { x = 0.25, startY = 0.20, endY = -0.10, z = 1.2 }
     }
 }
 
@@ -168,6 +172,8 @@ Config.PIN = {
     maxAttempts = 3,            -- Max failed attempts before card lock
     lockoutTime = 300,          -- Seconds to lock card after max attempts
     requireCard = true,         -- Require bank card item to use ATM
+    allowCardCreation = true,   -- Allow players to create a new bank card via the ATM if they don't have one
+    cardCreationCost = 50,      -- Cost to issue a new card
 }
 
 -- Transaction Settings  

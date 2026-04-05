@@ -2,6 +2,11 @@
 
 if Bridge.Framework ~= 'esx' then return end
 
+if GetResourceState('ox_inventory') ~= 'started' then
+    error('^1[atm-dui] ESX Framework requires ox_inventory! Please install and start ox_inventory.^0')
+    return
+end
+
 local ESX = exports['es_extended']:getSharedObject()
 
 -- Get player object
@@ -71,24 +76,15 @@ end
 
 -- Check if player has item
 function Bridge.HasItem(source, itemName)
-    if GetResourceState('ox_inventory') == 'started' then
-        local item = exports.ox_inventory:Search(source, 'count', itemName)
-        return item and item > 0
-    else
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if not xPlayer then return false end
-        local item = xPlayer.getInventoryItem(itemName)
-        return item and item.count > 0
-    end
+    local item = exports.ox_inventory:Search(source, 'count', itemName)
+    return item and item > 0
 end
 
 -- Get item data
 function Bridge.GetItemData(source, itemName)
-    if GetResourceState('ox_inventory') == 'started' then
-        local items = exports.ox_inventory:Search(source, 'slots', itemName)
-        if items and #items > 0 then
-            return items[1].metadata
-        end
+    local items = exports.ox_inventory:Search(source, 'slots', itemName)
+    if items and #items > 0 then
+        return items[1].metadata
     end
     return nil
 end
@@ -100,41 +96,19 @@ end
 
 -- Add Item
 function Bridge.AddItem(source, item, amount, info)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return false end
-    
-    if GetResourceState('ox_inventory') == 'started' then
-        return exports.ox_inventory:AddItem(source, item, amount, info)
-    else
-        return xPlayer.addInventoryItem(item, amount)
-    end
+    return exports.ox_inventory:AddItem(source, item, amount, info)
 end
 
-if GetResourceState('ox_inventory') == 'started' then
-    exports('use_atm_receipt', function(event, item, inventory, slot, data)
-        if event == 'usingItem' then
-            if item.metadata then
-                TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata)
-            else
-                TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.info)
-            end
-            return false -- don't consume
+exports('use_atm_receipt', function(event, item, inventory, slot, data)
+    if event == 'usingItem' then
+        if item.metadata then
+            TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.metadata)
+        else
+            TriggerClientEvent('atm-dui:client:viewReceipt', inventory.id, item.info)
         end
-    end)
-else
-    ESX.RegisterUsableItem('atm_receipt', function(source)
-        -- ESX doesn't natively support item metadata easily without ox_inventory
-        -- so if using raw ESX, they might not see full receipt data unless customized
-        -- but this prevents a crash
-        TriggerClientEvent('atm-dui:client:viewReceipt', source, {
-            type = 'ATM Receipt',
-            amount = 'Unknown',
-            account = 'Unknown',
-            balance = 'Unknown',
-            date = os.date('%Y-%m-%d %H:%M:%S')
-        })
-    end)
-end
+        return false -- don't consume
+    end
+end)
 
 -- Create callback helper
 function Bridge.CreateCallback(name, cb)

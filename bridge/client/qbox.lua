@@ -3,6 +3,11 @@
 
 if Bridge.Framework ~= 'qbox' then return end
 
+if GetResourceState('ox_inventory') ~= 'started' then
+    print('^1[atm-dui] QBox Framework requires ox_inventory! Please install and start ox_inventory.^0')
+    return
+end
+
 local qbx = exports.qbx_core
 
 ---Returns normalized player data for the ATM UI.
